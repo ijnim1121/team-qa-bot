@@ -33,8 +33,10 @@ export default function TeamAdminPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
+    setIsAdmin(sessionStorage.getItem('adminAuth') === 'true')
     fetchData()
   }, [teamId])
 
@@ -84,6 +86,21 @@ export default function TeamAdminPage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-5 py-8">
+        {/* 관리자 안내 배너 */}
+        {!isAdmin && (
+          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-5">
+            <p className="text-xs text-amber-700">
+              🔒 문서 삭제는 관리자만 가능합니다
+            </p>
+            <button
+              onClick={() => router.push('/')}
+              className="text-xs text-amber-600 hover:text-amber-800 font-semibold underline underline-offset-2 transition-colors"
+            >
+              관리자 로그인
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center text-sky-400 py-20 text-sm animate-pulse">불러오는 중...</div>
         ) : documents.length === 0 ? (
@@ -120,13 +137,17 @@ export default function TeamAdminPage() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => deleteDocument(doc.id)}
-                    disabled={deleting === doc.id}
-                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 whitespace-nowrap transition-colors px-2 py-1 hover:bg-red-50 rounded-lg"
-                  >
-                    {deleting === doc.id ? '삭제 중...' : '삭제'}
-                  </button>
+
+                  {/* 관리자만 삭제 버튼 표시 */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => deleteDocument(doc.id)}
+                      disabled={deleting === doc.id}
+                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 whitespace-nowrap transition-colors px-2 py-1 hover:bg-red-50 rounded-lg"
+                    >
+                      {deleting === doc.id ? '삭제 중...' : '삭제'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

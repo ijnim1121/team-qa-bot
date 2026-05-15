@@ -3,6 +3,7 @@ export interface Team {
   name: string
   description: string
   password: string
+  character: string
   created_at: string
 }
 

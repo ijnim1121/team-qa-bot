@@ -52,11 +52,25 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
 
     try {
-      const pdfParse = (await import('pdf-parse')).default
-      const parsed = await pdfParse(buffer)
-      content = parsed.text.trim()
-    } catch {
-      return NextResponse.json({ error: 'PDF 파싱에 실패했습니다' }, { status: 400 })
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+
+      const uint8Array = new Uint8Array(buffer)
+      const pdfDoc = await pdfjsLib.getDocument({ data: uint8Array, useSystemFonts: true }).promise
+
+      const pages: string[] = []
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items
+          .map((item) => ('str' in item ? item.str : ''))
+          .join(' ')
+        pages.push(pageText)
+      }
+      content = pages.join('\n').trim()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return NextResponse.json({ error: 'PDF 파싱에 실패했습니다: ' + msg }, { status: 400 })
     }
   } else if (sourceType === 'word') {
     const file = formData.get('file') as File

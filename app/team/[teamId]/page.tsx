@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Team, ChatMessage } from '@/types'
-import { getTeamCharacter } from '@/components/TeamCharacter'
+import { getCharacterComponent } from '@/components/TeamCharacter'
 
 const EXAMPLE_QUESTIONS = [
   '이 시스템에서 자주 발생하는 오류는 무엇인가요?',
@@ -54,23 +54,27 @@ export default function TeamChatPage() {
         body: JSON.stringify({ teamId, message: userText }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || `서버 오류 (${res.status})`)
+      }
       const assistantMsg: ChatMessage = {
         role: 'assistant',
         content: data.answer,
         sources: data.sources,
       }
       setMessages((prev) => [...prev, assistantMsg])
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '오류가 발생했습니다'
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: '오류가 발생했습니다. 다시 시도해주세요.' },
+        { role: 'assistant', content: `⚠️ ${msg}` },
       ])
     } finally {
       setLoading(false)
     }
   }
 
-  const Character = team ? getTeamCharacter(team.name) : null
+  const Character = team ? getCharacterComponent(team.character) : null
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 to-white flex flex-col">

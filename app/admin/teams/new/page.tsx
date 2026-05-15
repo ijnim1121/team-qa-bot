@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { CHARACTER_LIST, CharacterKey } from '@/components/TeamCharacter'
 
 export default function NewTeamPage() {
   const router = useRouter()
@@ -10,6 +11,7 @@ export default function NewTeamPage() {
   const [description, setDescription] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [character, setCharacter] = useState<CharacterKey>('robot')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -25,6 +27,7 @@ export default function NewTeamPage() {
       name: name.trim(),
       description: description.trim(),
       password: password.trim(),
+      character,
     })
 
     if (dbError) {
@@ -38,6 +41,8 @@ export default function NewTeamPage() {
 
   const inputClass =
     'w-full border-2 border-sky-200 focus:border-[#1e3a5f] rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none transition-colors bg-sky-50/40'
+
+  const selectedCharacter = CHARACTER_LIST.find((c) => c.key === character)!
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
@@ -59,10 +64,38 @@ export default function NewTeamPage() {
           <p className="text-gray-500 text-sm">새로운 팀을 등록하고 전용 Q&A 봇을 만들어보세요</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-3xl shadow-lg border border-sky-100 p-8 flex flex-col gap-6"
-        >
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-lg border border-sky-100 p-8 flex flex-col gap-6">
+          {/* 캐릭터 선택 */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1e3a5f] mb-3">팀 캐릭터 선택</label>
+            <div className="grid grid-cols-5 gap-2">
+              {CHARACTER_LIST.map(({ key, label, Component }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setCharacter(key)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all duration-200 ${
+                    character === key
+                      ? 'border-[#1e3a5f] bg-sky-50 scale-[1.05] shadow-md'
+                      : 'border-gray-200 hover:border-sky-300 hover:bg-sky-50/50'
+                  }`}
+                >
+                  <Component size={44} />
+                  <span className="text-xs font-medium text-gray-600">{label}</span>
+                </button>
+              ))}
+            </div>
+            {/* 선택된 캐릭터 미리보기 */}
+            <div className="mt-4 flex items-center gap-3 bg-sky-50 rounded-2xl px-4 py-3">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <selectedCharacter.Component size={32} />
+              </div>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-[#1e3a5f]">{selectedCharacter.label}</span> 캐릭터가 선택됐습니다
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-[#1e3a5f] mb-2">
               팀 이름 <span className="text-red-400">*</span>
@@ -120,9 +153,7 @@ export default function NewTeamPage() {
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm bg-red-50 border border-red-100 rounded-xl px-4 py-2">
-              {error}
-            </p>
+            <p className="text-red-400 text-sm bg-red-50 border border-red-100 rounded-xl px-4 py-2">{error}</p>
           )}
 
           <button
