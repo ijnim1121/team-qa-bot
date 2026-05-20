@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// pdfjs-dist requires the worker to be injected before getDocument is called.
+// In Node.js there is no browser Worker, so we use the "fake worker" path:
+// setting globalThis.pdfjsWorker makes pdfjs use WorkerMessageHandler inline.
+// We cache the promise so the module is only imported once.
+// pdfjs requires WorkerMessageHandler injected before getDocument() is called.
+// We import both lib and worker together once at module load so the first
+// request never races against an uninitialised globalThis.pdfjsWorker.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pdfjsReady: Promise<any> = Promise.all([
+  import('pdfjs-dist/legacy/build/pdf.mjs'),
+  // @ts-ignore – worker build has no .d.ts
+  import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+]).then(([lib, worker]: [any, any]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(globalThis as any).pdfjsWorker = worker
+  // Replace the memoised _setupFakeWorkerGlobal (which shadow() stores as a
+  // configurable data property) with a pre-resolved Promise so pdfjs uses
+  // WorkerMessageHandler inline instead of fetching a worker URL.
+  // NOTE: do NOT delete — that removes the property entirely and the next
+  // access returns undefined, causing ".then of undefined".
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Object.defineProperty(lib.PDFWorker as any, '_setupFakeWorkerGlobal', {
+    value: Promise.resolve(worker.WorkerMessageHandler),
+    enumerable: true,
+    configurable: true,
+    writable: false,
+  })
+  return lib
+})
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -52,8 +83,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
 
     try {
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+      const pdfjsLib = await pdfjsReady
 
       const uint8Array = new Uint8Array(buffer)
       const pdfDoc = await pdfjsLib.getDocument({ data: uint8Array, useSystemFonts: true }).promise
@@ -63,7 +93,8 @@ export async function POST(req: NextRequest) {
         const page = await pdfDoc.getPage(i)
         const textContent = await page.getTextContent()
         const pageText = textContent.items
-          .map((item) => ('str' in item ? item.str : ''))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((item: any) => ('str' in item ? item.str : ''))
           .join(' ')
         pages.push(pageText)
       }

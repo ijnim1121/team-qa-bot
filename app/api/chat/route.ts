@@ -65,13 +65,44 @@ export async function POST(req: NextRequest) {
 === 제공된 문서 ===
 ${docsContext}`
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      systemInstruction: systemPrompt,
-    })
+    // 503은 일시적 과부하 → 같은 모델을 최대 3회 재시도
+    const callWithRetry = async (modelName: string): Promise<string> => {
+      let attempt = 0
+      while (true) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemPrompt })
+          const result = await model.generateContent(message)
+          return result.response.text()
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : ''
+          if (msg.includes('503') && attempt < 2) {
+            attempt++
+            await new Promise(r => setTimeout(r, attempt * 2000))
+            continue
+          }
+          throw err
+        }
+      }
+    }
 
-    const result = await model.generateContent(message)
-    const rawAnswer = result.response.text()
+    // 429/404는 해당 모델 문제이므로 다음 모델로 fallback
+    // gemini-2.0-flash는 이 키에서 quota=0이라 제외
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash-8b']
+    let rawAnswer = ''
+    let lastErr: unknown
+
+    for (const modelName of models) {
+      try {
+        rawAnswer = await callWithRetry(modelName)
+        break
+      } catch (err) {
+        lastErr = err
+        const msg = err instanceof Error ? err.message : ''
+        if (!msg.includes('429') && !msg.includes('404') && !msg.includes('503')) throw err
+      }
+    }
+
+    if (!rawAnswer) throw lastErr
 
     const sourceMatches = [...rawAnswer.matchAll(/\[참고문서:\s*([^\]]+)\]/g)]
     const sources = sourceMatches.map((m) => m[1].trim())
