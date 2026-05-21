@@ -14,6 +14,7 @@ export interface Document {
   content: string
   source_type: 'pdf' | 'word' | 'text' | 'url'
   source_url: string | null
+  file_url: string | null
   created_at: string
 }
 

@@ -99,24 +99,24 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
       {/* 헤더 */}
-      <header className="bg-[#1e3a5f] text-white pt-10 pb-14 px-6 shadow-xl relative overflow-hidden">
+      <header className="bg-[#1e3a5f] text-white pt-10 pb-10 px-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-40 h-40 bg-sky-400/10 rounded-full -translate-x-16 -translate-y-16" />
         <div className="absolute bottom-0 right-0 w-56 h-56 bg-sky-300/10 rounded-full translate-x-20 translate-y-20" />
         <div className="absolute top-4 right-1/4 w-6 h-6 bg-sky-300/20 rounded-full" />
 
         <div className="max-w-5xl mx-auto text-center relative">
           <div className="inline-flex items-center gap-2 bg-sky-400/20 text-sky-200 text-xs font-medium px-3 py-1 rounded-full mb-4">
-            AI 지식 도우미
+            문서 기반 챗봇
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight">팀 지식베이스 Q&A</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">문서 기반 AI 도우미</h1>
           <p className="mt-3 text-sky-200 text-sm">
-            팀을 선택하고 AI 도우미에게 궁금한 것을 물어보세요
+            등록된 문서를 기반으로 정확하게 답변해드려요
           </p>
         </div>
       </header>
 
       {/* 카드 그리드 */}
-      <div className="max-w-5xl mx-auto px-6 -mt-6 pb-24">
+      <div className="max-w-5xl mx-auto px-6 py-10 pb-24">
         {loading ? (
           <div className="text-center text-sky-400 py-20 text-sm animate-pulse">불러오는 중...</div>
         ) : teams.length === 0 ? (

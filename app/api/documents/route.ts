@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   let title = ''
   let content = ''
   let sourceUrl: string | null = null
+  let fileUrl: string | null = null
 
   if (sourceType === 'text') {
     title = formData.get('title') as string
@@ -82,12 +83,20 @@ export async function POST(req: NextRequest) {
     title = file.name.replace(/\.pdf$/i, '')
     const buffer = Buffer.from(await file.arrayBuffer())
 
+    // 원본 파일 Storage 업로드
+    const storagePath = `${teamId}/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, buffer, { contentType: 'application/pdf', upsert: false })
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(storagePath)
+      fileUrl = publicUrl
+    }
+
     try {
       const pdfjsLib = await pdfjsReady
-
       const uint8Array = new Uint8Array(buffer)
       const pdfDoc = await pdfjsLib.getDocument({ data: uint8Array, useSystemFonts: true }).promise
-
       const pages: string[] = []
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const page = await pdfDoc.getPage(i)
@@ -110,6 +119,16 @@ export async function POST(req: NextRequest) {
     title = file.name.replace(/\.(docx?|hwp)$/i, '')
     const buffer = Buffer.from(await file.arrayBuffer())
 
+    // 원본 파일 Storage 업로드
+    const storagePath = `${teamId}/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, buffer, { contentType: file.type || 'application/octet-stream', upsert: false })
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(storagePath)
+      fileUrl = publicUrl
+    }
+
     try {
       const mammoth = await import('mammoth')
       const result = await mammoth.extractRawText({ buffer })
@@ -127,6 +146,7 @@ export async function POST(req: NextRequest) {
     content,
     source_type: sourceType,
     source_url: sourceUrl,
+    file_url: fileUrl,
   })
 
   if (error) {
