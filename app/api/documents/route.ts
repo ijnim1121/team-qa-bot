@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// pdfjs-dist v5 references DOMMatrix at module evaluation time — Node.js doesn't have it.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).DOMMatrix === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(globalThis as any).DOMMatrix = class DOMMatrix {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0
+    m11 = 1; m12 = 0; m13 = 0; m14 = 0
+    m21 = 0; m22 = 1; m23 = 0; m24 = 0
+    m31 = 0; m32 = 0; m33 = 1; m34 = 0
+    m41 = 0; m42 = 0; m43 = 0; m44 = 1
+    is2D = true; isIdentity = true
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    constructor(_init?: string | number[]) {}
+  }
+}
+
 // pdfjs-dist requires the worker to be injected before getDocument is called.
 // In Node.js there is no browser Worker, so we use the "fake worker" path:
 // setting globalThis.pdfjsWorker makes pdfjs use WorkerMessageHandler inline.
@@ -84,7 +100,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
 
     // 원본 파일 Storage 업로드
-    const storagePath = `${teamId}/${Date.now()}_${file.name}`
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9가-힣._-]/g, '_')
+    const storagePath = `${teamId}/${Date.now()}_${safeFileName}`
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(storagePath, buffer, { contentType: 'application/pdf', upsert: false })
@@ -122,7 +139,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
 
     // 원본 파일 Storage 업로드
-    const storagePath = `${teamId}/${Date.now()}_${file.name}`
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9가-힣._-]/g, '_')
+    const storagePath = `${teamId}/${Date.now()}_${safeFileName}`
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(storagePath, buffer, { contentType: file.type || 'application/octet-stream', upsert: false })
