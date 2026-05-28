@@ -18,6 +18,13 @@ export default function AdminPage() {
   const [pwSaving, setPwSaving] = useState(false)
   const [pwError, setPwError] = useState('')
 
+  // 팀 정보 수정 모달
+  const [editModal, setEditModal] = useState<Team | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+
   useEffect(() => {
     if (sessionStorage.getItem('adminAuth') !== 'true') {
       router.replace('/')
@@ -40,6 +47,33 @@ export default function AdminPage() {
       setTeams((prev) => prev.filter((t) => t.id !== team.id))
     }
     setDeleting(null)
+  }
+
+  function openEditModal(team: Team) {
+    setEditModal(team)
+    setEditName(team.name)
+    setEditDesc(team.description || '')
+    setEditError('')
+  }
+
+  async function handleEditSave() {
+    if (!editModal) return
+    if (!editName.trim()) { setEditError('팀 이름을 입력해주세요'); return }
+    setEditSaving(true)
+    const res = await fetch(`/api/admin/teams/${editModal.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName, description: editDesc }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setEditError(data.error || '변경 실패')
+      setEditSaving(false)
+      return
+    }
+    setTeams((prev) => prev.map((t) => t.id === editModal.id ? { ...t, name: editName.trim(), description: editDesc.trim() } : t))
+    setEditModal(null)
+    setEditSaving(false)
   }
 
   function openPwModal(team: Team) {
@@ -146,6 +180,12 @@ export default function AdminPage() {
                     {/* 액션 버튼 */}
                     <div className="flex flex-col gap-1.5 flex-shrink-0">
                       <button
+                        onClick={() => openEditModal(team)}
+                        className="text-xs px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 rounded-lg transition-colors font-medium"
+                      >
+                        정보 수정
+                      </button>
+                      <button
                         onClick={() => openPwModal(team)}
                         className="text-xs px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-200 rounded-lg transition-colors font-medium"
                       >
@@ -166,6 +206,63 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {/* 팀 정보 수정 모달 */}
+      {editModal && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+          onClick={() => setEditModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 border border-sky-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-[#1e3a5f] mb-1">팀 정보 수정</h3>
+            <p className="text-xs text-gray-400 mb-5">{editModal.name}</p>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">팀 이름</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => { setEditName(e.target.value); setEditError('') }}
+                  placeholder="팀 이름"
+                  className="w-full border-2 border-sky-200 focus:border-[#1e3a5f] rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none transition-colors bg-sky-50/40"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">소개글</label>
+                <textarea
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="팀 소개글 (선택)"
+                  rows={3}
+                  className="w-full border-2 border-sky-200 focus:border-[#1e3a5f] rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none transition-colors bg-sky-50/40 resize-none"
+                />
+              </div>
+            </div>
+            {editError && <p className="text-red-400 text-xs mt-2">{editError}</p>}
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setEditModal(null)}
+                className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-all font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={editSaving}
+                className="flex-1 py-2.5 bg-[#1e3a5f] hover:bg-sky-600 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95"
+              >
+                {editSaving ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 비밀번호 변경 모달 */}
       {pwModal && (

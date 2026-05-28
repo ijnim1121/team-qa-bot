@@ -18,20 +18,30 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext<'/api/admin/te
   return NextResponse.json({ success: true })
 }
 
-// 팀 비밀번호 변경
+// 팀 정보 변경 (password / name+description)
 export async function PATCH(req: NextRequest, ctx: RouteContext<'/api/admin/teams/[teamId]'>) {
   const { teamId } = await ctx.params
-  const { password } = await req.json()
+  const body = await req.json()
 
-  if (!password?.trim()) {
-    return NextResponse.json({ error: '비밀번호를 입력해주세요' }, { status: 400 })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updates: Record<string, any> = {}
+  if (body.password !== undefined) {
+    if (!body.password.trim()) return NextResponse.json({ error: '비밀번호를 입력해주세요' }, { status: 400 })
+    updates.password = body.password.trim()
+  }
+  if (body.name !== undefined) {
+    if (!body.name.trim()) return NextResponse.json({ error: '팀 이름을 입력해주세요' }, { status: 400 })
+    updates.name = body.name.trim()
+  }
+  if (body.description !== undefined) {
+    updates.description = body.description.trim()
   }
 
-  const { error } = await supabase
-    .from('teams')
-    .update({ password: password.trim() })
-    .eq('id', teamId)
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: '변경할 내용이 없습니다' }, { status: 400 })
+  }
 
+  const { error } = await supabase.from('teams').update(updates).eq('id', teamId)
   if (error) {
     return NextResponse.json({ error: '변경 실패: ' + error.message }, { status: 500 })
   }

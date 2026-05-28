@@ -117,6 +117,12 @@ export default function HomePage() {
           <p className="mt-3 text-sky-200 text-sm">
             등록된 문서를 기반으로 정확하게 답변해드려요
           </p>
+          <button
+            onClick={() => router.push('/demo')}
+            className="mt-5 inline-flex items-center gap-2 bg-white text-[#1e3a5f] hover:bg-sky-50 text-sm font-bold px-5 py-2.5 rounded-2xl shadow-md transition-all duration-200 hover:scale-105 active:scale-95"
+          >
+            🤖 서비스 체험해보기
+          </button>
         </div>
       </header>
 
