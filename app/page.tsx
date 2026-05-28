@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Team } from '@/types'
 import { getCharacterComponent } from '@/components/TeamCharacter'
+import GuideModal from '@/components/GuideModal'
 
 export default function HomePage() {
   const router = useRouter()
@@ -98,6 +99,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
+      <GuideModal />
       {/* 헤더 */}
       <header className="bg-[#1e3a5f] text-white pt-10 pb-10 px-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-40 h-40 bg-sky-400/10 rounded-full -translate-x-16 -translate-y-16" />
