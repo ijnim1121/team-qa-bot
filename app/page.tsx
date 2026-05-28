@@ -19,6 +19,9 @@ export default function HomePage() {
   const [error, setError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
+  // 가이드
+  const [guideOpen, setGuideOpen] = useState(false)
+
   // 관리자 모달
   const [adminModalOpen, setAdminModalOpen] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
@@ -99,7 +102,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50">
-      <GuideModal />
+      <GuideModal forceOpen={guideOpen} onClose={() => setGuideOpen(false)} />
       {/* 헤더 */}
       <header className="bg-[#1e3a5f] text-white pt-10 pb-10 px-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-40 h-40 bg-sky-400/10 rounded-full -translate-x-16 -translate-y-16" />
@@ -157,6 +160,12 @@ export default function HomePage() {
 
       {/* 우측 하단 버튼 */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        <button
+          onClick={() => setGuideOpen(true)}
+          className="bg-white hover:bg-gray-50 text-[#1e3a5f] border border-sky-200 px-4 py-2.5 rounded-full shadow-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+        >
+          사용 가이드
+        </button>
         <button
           onClick={openAdminModal}
           className="bg-white hover:bg-gray-50 text-[#1e3a5f] border border-sky-200 px-4 py-2.5 rounded-full shadow-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95"

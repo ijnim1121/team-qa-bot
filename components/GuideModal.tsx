@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'guide_dismissed'
 
+interface Props {
+  forceOpen?: boolean
+  onClose?: () => void
+}
+
 const steps = [
   {
     icon: '🏠',
@@ -32,22 +37,33 @@ const steps = [
   },
 ]
 
-export default function GuideModal() {
+export default function GuideModal({ forceOpen, onClose }: Props) {
   const [open, setOpen] = useState(false)
+  const [isManual, setIsManual] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY) !== 'true') {
       setOpen(true)
+      setIsManual(false)
     }
   }, [])
 
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true)
+      setIsManual(true)
+    }
+  }, [forceOpen])
+
   function close() {
     setOpen(false)
+    onClose?.()
   }
 
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, 'true')
     setOpen(false)
+    onClose?.()
   }
 
   if (!open) return null
@@ -94,12 +110,14 @@ export default function GuideModal() {
           >
             확인했어요
           </button>
-          <button
-            onClick={dismiss}
-            className="w-full py-2.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors"
-          >
-            다시 보지 않기
-          </button>
+          {!isManual && (
+            <button
+              onClick={dismiss}
+              className="w-full py-2.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors"
+            >
+              다시 보지 않기
+            </button>
+          )}
         </div>
       </div>
     </div>
