@@ -88,7 +88,9 @@ export async function POST(req: NextRequest) {
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(storagePath, buffer, { contentType: 'application/pdf', upsert: false })
-    if (!uploadError) {
+    if (uploadError) {
+      console.error('[Storage upload error - pdf]', uploadError.message)
+    } else {
       const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(storagePath)
       fileUrl = publicUrl
     }
@@ -124,7 +126,9 @@ export async function POST(req: NextRequest) {
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(storagePath, buffer, { contentType: file.type || 'application/octet-stream', upsert: false })
-    if (!uploadError) {
+    if (uploadError) {
+      console.error('[Storage upload error - word]', uploadError.message)
+    } else {
       const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(storagePath)
       fileUrl = publicUrl
     }
